@@ -1,0 +1,5 @@
+env
+.env
+__pycache__
+view.py
+downloads
