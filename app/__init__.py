@@ -1,11 +1,31 @@
 import os
+import logging
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
+from flask_sqlalchemy import SQLAlchemy
+from logging.handlers import RotatingFileHandler
 
 load_dotenv()
 
 db = SQLAlchemy()
+
+# Logging configuration
+log_filename = "run.log"
+log_max_size = 1 * 1024 * 1024  # 1 MB
+
+# Create a logger
+logger = logging.getLogger("python")
+logger.setLevel(logging.DEBUG)
+
+# Create a file handler with log rotation
+handler = RotatingFileHandler(log_filename, maxBytes=log_max_size, backupCount=5)
+
+# Create a formatter
+formatter = logging.Formatter("%(asctime)s [%(levelname)s] - %(message)s")
+handler.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(handler)
 
 
 def create_app():

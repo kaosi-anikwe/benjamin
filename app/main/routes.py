@@ -3,6 +3,7 @@ import traceback
 from flask import Blueprint, request, jsonify, send_file
 
 # local imports
+from app import logger
 from app.models import ButtonStatus, Devices
 
 main = Blueprint("main", __name__)
@@ -36,13 +37,15 @@ def button_status():
         if not Devices.query.filter(Devices.hardware_id == hardware_id).one_or_none():
             new_device = Devices(hardware_id)
             new_device.insert()
+            logger.info(f"Added new device with hardwareID: {new_device.hardware_id}")
 
         btn_status = ButtonStatus.query.filter(
             ButtonStatus.hardware_id == hardware_id
         ).one_or_none()
         if not btn_status:
-            new_staus = ButtonStatus(status, hardware_id, message)
-            new_staus.insert()
+            new_status = ButtonStatus(status, hardware_id, message)
+            new_status.insert()
+            logger.info(f"Added new device status with hardwareID: {new_status.hardware_id}")
             return jsonify(success=True)
         # update record
         btn_status.hardware_id = hardware_id
@@ -51,18 +54,22 @@ def button_status():
         btn_status.update()
         return jsonify(success=True)
     except:
-        print(traceback.format_exc())
+        logger.error(traceback.format_exc())
         return jsonify(success=False), 500
 
 
 @main.get("/download")
 def download_files():
-    hardware_id = request.args.get("hardwareID")
-    if hardware_id:
-        if Devices.query.filter(Devices.hardware_id == hardware_id).one_or_none():
-            filename = os.path.abspath(os.path.join("downloads", request.args.get("filename", "")))
-            if os.path.exists(filename) and not os.path.isdir(filename):
-                return send_file(filename, as_attachment=True)
-            return jsonify(message="File not found"), 404
-        return jsonify(message="Invalid hardware ID"), 401
-    return jsonify(message="Please provide hardwareID"), 400
+    try:
+        hardware_id = request.args.get("hardwareID")
+        if hardware_id:
+            if Devices.query.filter(Devices.hardware_id == hardware_id).one_or_none():
+                filename = os.path.abspath(os.path.join("downloads", request.args.get("filename", "")))
+                if os.path.exists(filename) and not os.path.isdir(filename):
+                    return send_file(filename, as_attachment=True)
+                return jsonify(message="File not found"), 404
+            return jsonify(message="Invalid hardware ID"), 401
+        return jsonify(message="Please provide hardwareID"), 400
+    except:
+        logger.error(traceback.format_exc())
+        return jsonify(success=False, message="Internal Server Error"), 500
